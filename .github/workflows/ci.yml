@@ -37,6 +37,6 @@ jobs:
         with:
           go-version: 1.19
       - name: Run migrations
-        run: make migrate up
+        run: make migrateup
       - name: Test
         run: make test
