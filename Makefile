@@ -16,10 +16,13 @@ migratedown:
 migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
 
+server:
+	go run main.go
+
 sqlc:
 	sqlc generate
 
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc
+.PHONY: postgres createdb dropdb migrateup migratedown server sqlc
