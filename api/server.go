@@ -5,23 +5,23 @@ import (
 	db "github.com/hmoodallahma/123bank/db/sqlc"
 )
 
-//Servers HTTP requests for banking service
+// Servers HTTP requests for banking service
 type Server struct {
-	store *db.Store // access db
+	store  db.Store    // access db
 	router *gin.Engine // handles routing
 }
 
-//creates a new server instance
-func NewServer(store *db.Store) *Server{
+// creates a new server instance
+func NewServer(store db.Store) *Server {
 	server := &Server{store: store}
 	router := gin.Default()
 
 	// add routes to router
-	router.POST("/account", server.createAccount) // neeed to implement
-	router.GET("/account/:id", server.getAccount) // neeed to implement
-	router.PUT("/account/:id", server.updateAccount) // neeed to implement
-	router.DELETE("/account/:id", server.deleteAccount) // neeed to implement
-	router.GET("/accounts", server.listAccounts) // neeed to implement
+	router.POST("/account", server.createAccount)
+	router.GET("/account/:id", server.getAccount)
+	router.PUT("/account/:id", server.updateAccount)
+	router.DELETE("/account/:id", server.deleteAccount)
+	router.GET("/accounts", server.listAccounts)
 	server.router = router
 	return server
 }
@@ -32,7 +32,7 @@ func (server *Server) Start(address string) error {
 	return server.router.Run(address)
 }
 
-func errorResponse(err error) gin.H{
+func errorResponse(err error) gin.H {
 	return gin.H{
 		"error": err.Error(),
 	}

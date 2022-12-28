@@ -6,16 +6,21 @@ import (
 	"fmt"
 )
 
+type Store interface {
+	Querier
+	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
+}
+
 // Provides all functions to executre db queries and transactions
 // run queries individually or in combination
-type Store struct {
+type SQLStore struct {
 	*Queries //composition
 	db       *sql.DB
 }
 
 // NewStore creates a new Store
-func NewStore(db *sql.DB) *Store {
-	return &Store{
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{
 		db:      db,
 		Queries: New(db),
 	}
@@ -24,7 +29,7 @@ func NewStore(db *sql.DB) *Store {
 // executes a function within a database function
 // takes context and callback function as input
 // commit or rollback the query based on the error returned by the function
-func (store *Store) execTx(ctx context.Context, fn func(queries *Queries) error) error {
+func (store *SQLStore) execTx(ctx context.Context, fn func(queries *Queries) error) error {
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
 		fmt.Println(err)
@@ -63,7 +68,7 @@ type TransferTxResult struct {
 // transferTx perfoms a money transfer between two accounts
 // Create a transfer record, add account entries and update accounts' balances
 // within a single database transaction
-func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
+func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
@@ -101,7 +106,7 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.FromAccountID, -arg.Amount, arg.ToAccountID, arg.Amount)
 		} else {
 
-			result.ToAccount, result.FromAccount, err = addMoney(ctx,q, arg.ToAccountID, arg.Amount, arg.FromAccountID, -arg.Amount)
+			result.ToAccount, result.FromAccount, err = addMoney(ctx, q, arg.ToAccountID, arg.Amount, arg.FromAccountID, -arg.Amount)
 
 		}
 		if err != nil {
@@ -121,14 +126,14 @@ func addMoney(ctx context.Context,
 	amount2 int64,
 ) (account1 Account, account2 Account, err error) {
 	account1, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
-		ID: accountID1,
+		ID:     accountID1,
 		Amount: amount1,
 	})
 	if err != nil {
 		return
 	}
 	account2, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
-		ID: accountID2,
+		ID:     accountID2,
 		Amount: amount2,
 	})
 	if err != nil {

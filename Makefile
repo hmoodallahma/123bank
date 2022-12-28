@@ -16,6 +16,9 @@ migratedown:
 migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
 
+mock:
+	mockgen -package mockdb -destination db/mock/store.go github.com/hmoodallahma/123bank/db/sqlc Store
+
 server:
 	go run main.go
 
@@ -25,4 +28,4 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown server sqlc
+.PHONY: postgres createdb dropdb migrateup migratedown mock server sqlc
