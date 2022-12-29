@@ -13,8 +13,14 @@ dropdb:
 migratedown:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down
 
+migratedown1:
+	migrate -path db/migration -database "$(DB_URL)" -verbose down 1
+
 migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
+
+migrateup1:
+	migrate -path db/migration -database "$(DB_URL)" -verbose up 1
 
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/hmoodallahma/123bank/db/sqlc Store
@@ -28,4 +34,4 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown mock server sqlc
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1make mock server sqlc

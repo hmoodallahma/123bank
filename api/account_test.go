@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/hmoodallahma/123bank/db/mock"
 	db "github.com/hmoodallahma/123bank/db/sqlc"
@@ -18,7 +19,8 @@ import (
 )
 
 func TestGetAccountApi(t *testing.T) {
-	account := randomAccount()
+	user := randomUser(t)
+	account := randomAccount(user)
 
 	testCases := []struct {
 		name          string
@@ -121,12 +123,103 @@ func requireBodyMatchAccount(t *testing.T, body *bytes.Buffer,
 	require.Equal(t, gotAccount, account)
 }
 
-func randomAccount() db.Account {
+func randomAccount(user db.User) db.Account {
 	return db.Account{
 		ID:        util.RandomInt(1, 1000),
-		Owner:     util.RandomOwner(),
+		Owner:     user.Username,
 		Balance:   util.RandomMoney(),
 		Currency:  util.RandomCurrency(),
 		CreatedAt: time.Time{},
+	}
+}
+
+func TestCreateAccountAPI(t *testing.T) {
+	user:= randomUser(t)
+	account := randomAccount(user)
+
+	testCases := []struct {
+		name          string
+		body          gin.H
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			body: gin.H{
+				"owner":    account.Owner,
+				"currency": account.Currency,
+				"balance":  account.Balance,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.CreateAccountParams{
+					Owner:    account.Owner,
+					Currency: account.Currency,
+					Balance:  0,
+				}
+				
+				store.EXPECT().
+					CreateAccount(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(account, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchAccount(t, recorder.Body, account)
+			},
+		},
+		{
+			name: "InvalidRequest",
+			body: gin.H{
+				"currency": "invalid",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "InternalError",
+			body: gin.H{
+				"owner": "mommy",
+				"currency": account.Currency,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateAccount(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.Account{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	
+	}
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			// build stubs
+			tc.buildStubs(store)
+			// start HTTP server and getAccount
+
+			server := NewServer(store)
+			data, err := json.Marshal(tc.body)
+			// record response of HTTP request
+			recorder := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodPost, "/account",
+				bytes.NewReader(data))
+			require.NoError(t, err)
+			// sends api request through router
+			server.router.ServeHTTP(recorder, request)
+
+		})
 	}
 }
