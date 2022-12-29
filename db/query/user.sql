@@ -20,3 +20,14 @@ SET
 WHERE
         username = sqlc.arg(username)
 RETURNING *;
+
+
+-- name: DeleteUser :exec
+DELETE FROM users
+WHERE username = $1;
+
+-- name: ListUsers :many
+SELECT username, full_name, email, created_at, password_changed_at FROM users
+ORDER BY username
+LIMIT $1
+    OFFSET $2;
