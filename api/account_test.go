@@ -19,7 +19,7 @@ import (
 )
 
 func TestGetAccountApi(t *testing.T) {
-	user := randomUser(t)
+	user, _ := randomUser(t)
 	account := randomAccount(user)
 
 	testCases := []struct {
@@ -134,7 +134,7 @@ func randomAccount(user db.User) db.Account {
 }
 
 func TestCreateAccountAPI(t *testing.T) {
-	user:= randomUser(t)
+	user, _ := randomUser(t)
 	account := randomAccount(user)
 
 	testCases := []struct {
@@ -156,7 +156,7 @@ func TestCreateAccountAPI(t *testing.T) {
 					Currency: account.Currency,
 					Balance:  0,
 				}
-				
+
 				store.EXPECT().
 					CreateAccount(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
@@ -184,7 +184,7 @@ func TestCreateAccountAPI(t *testing.T) {
 		{
 			name: "InternalError",
 			body: gin.H{
-				"owner": "mommy",
+				"owner":    "mommy",
 				"currency": account.Currency,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
@@ -197,7 +197,6 @@ func TestCreateAccountAPI(t *testing.T) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
-	
 	}
 	for i := range testCases {
 		tc := testCases[i]
