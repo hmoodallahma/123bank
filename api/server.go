@@ -29,25 +29,30 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 		store:      store,
 		tokenMaker: tokenMaker,
 	}
-	router := gin.Default()
 
 	// add validators
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
 	}
 	// add routes to router
+	server.setUpRouter()
+
+	return server, nil
+}
+
+func (server *Server) setUpRouter() {
+	router := gin.Default()
 	router.POST("/account", server.createAccount)
+	router.POST("/users/login", server.loginUser)
 	router.GET("/account/:id", server.getAccount)
 	router.PUT("/account/:id", server.updateAccount)
 	router.DELETE("/account/:id", server.deleteAccount)
 	router.GET("/accounts", server.listAccounts)
-
 	router.POST("/transfer", server.createTransfer)
 	router.POST("/user", server.createUser)
 	router.DELETE("/user/:username", server.deleteUser)
 	router.GET("/users", server.listUsers)
 	server.router = router
-	return server, nil
 }
 
 // start the server on a specific address
