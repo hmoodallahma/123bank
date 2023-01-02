@@ -5,14 +5,14 @@ import (
 	"github.com/hmoodallahma/123bank/api"
 	db "github.com/hmoodallahma/123bank/db/sqlc"
 	"github.com/hmoodallahma/123bank/util"
-	"log"
 	_ "github.com/lib/pq"
+	"log"
 )
 
-func main(){
+func main() {
 
 	config, err := util.LoadConfig(".")
-	if err != nil{
+	if err != nil {
 		log.Fatal("cannot load configurations", err)
 	}
 
@@ -23,9 +23,9 @@ func main(){
 	}
 
 	store := db.NewStore(conn)
-	server := api.NewServer(store)
+	server, err := api.NewServer(config, store)
 	err = server.Start(config.ServerAddress)
-	if err != nil{
+	if err != nil {
 		log.Fatal("cannot start server", err)
 	}
 }

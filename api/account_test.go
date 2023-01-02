@@ -98,7 +98,7 @@ func TestGetAccountApi(t *testing.T) {
 			tc.buildStubs(store)
 			// start HTTP server and getAccount
 
-			server := NewServer(store)
+			server := NewTestServer(t, store)
 			// record response of HTTP request
 			recorder := httptest.NewRecorder()
 			url := fmt.Sprint("/account/", tc.accountID)
@@ -209,7 +209,7 @@ func TestCreateAccountAPI(t *testing.T) {
 			tc.buildStubs(store)
 			// start HTTP server and getAccount
 
-			server := NewServer(store)
+			server := NewTestServer(t, store)
 			data, err := json.Marshal(tc.body)
 			// record response of HTTP request
 			recorder := httptest.NewRecorder()
