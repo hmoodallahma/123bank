@@ -15,6 +15,15 @@ type createAccountRequest struct {
 	Currency string `json:"currency" binding:"required,currency"`
 }
 
+func inferOwnerFromCtx(ctx *gin.Context, account db.Account, err error) {
+	authPayload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
+	if account.Owner != authPayload.Username {
+		err = errors.New("account doesnt belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+}
+
 // gin context helps parse request
 // user can only create an account for themself
 func (server *Server) createAccount(ctx *gin.Context) {
@@ -66,12 +75,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	authPayload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
-	if account.Owner != authPayload.Username {
-		err = errors.New("account doesnt belong to the authenticated user")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
+	inferOwnerFromCtx(ctx, account, err)
 	ctx.JSON(http.StatusOK, account)
 	return
 }
@@ -103,7 +107,7 @@ func (server *Server) updateAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
+	inferOwnerFromCtx(ctx, account, err)
 	arg := db.UpdateAccountParams{
 		ID:      req.ID,
 		Balance: body.Balance,
@@ -134,7 +138,7 @@ func (server *Server) deleteAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-
+	inferOwnerFromCtx(ctx, account, err)
 	err = server.store.DeleteAccount(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -160,7 +164,9 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	authPayload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
 	arg := db.ListAccountsParams{
+		Owner:  authPayload.Username,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	}
