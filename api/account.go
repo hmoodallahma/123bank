@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	db "github.com/hmoodallahma/123bank/db/sqlc"
 	"github.com/hmoodallahma/123bank/token"
@@ -16,7 +17,7 @@ type createAccountRequest struct {
 }
 
 func inferOwnerFromCtx(ctx *gin.Context, account db.Account, err error) {
-	authPayload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if account.Owner != authPayload.Username {
 		err = errors.New("account doesnt belong to the authenticated user")
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
@@ -32,7 +33,7 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	authPayload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	// get user name from token
 	arg := db.CreateAccountParams{
 		Owner:    authPayload.Username,
@@ -75,7 +76,13 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	inferOwnerFromCtx(ctx, account, err)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	fmt.Println(authPayload)
+	if account.Owner != authPayload.Username {
+		err = errors.New("account doesnt belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
 	ctx.JSON(http.StatusOK, account)
 	return
 }
@@ -164,7 +171,7 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	authPayload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := db.ListAccountsParams{
 		Owner:  authPayload.Username,
 		Limit:  req.PageSize,
