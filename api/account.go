@@ -2,34 +2,38 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/gin-gonic/gin"
 	db "github.com/hmoodallahma/123bank/db/sqlc"
+	"github.com/hmoodallahma/123bank/token"
 	"github.com/lib/pq"
 	"net/http"
 )
 
 // get from http body
 type createAccountRequest struct {
-	Owner    string `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,currency"`
 }
 
 // gin context helps parse request
+// user can only create an account for themself
 func (server *Server) createAccount(ctx *gin.Context) {
 	var req createAccountRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	authPayload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
+	// get user name from token
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		Owner:    authPayload.Username,
 		Currency: req.Currency,
 		Balance:  0,
 	}
 
 	account, err := server.store.CreateAccount(ctx, arg)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok{
+		if pqErr, ok := err.(*pq.Error); ok {
 			switch pqErr.Code.Name() {
 			case "foreign_key_violation", "unique_violation":
 				ctx.JSON(http.StatusForbidden, errorResponse(err))
@@ -60,6 +64,12 @@ func (server *Server) getAccount(ctx *gin.Context) {
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	authPayload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
+	if account.Owner != authPayload.Username {
+		err = errors.New("account doesnt belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 	ctx.JSON(http.StatusOK, account)
