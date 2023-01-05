@@ -1,11 +1,17 @@
 DB_URL=postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable
 
-
 postgres:
 	docker run --name postgres13 --network bank-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:13-alpine
 
 createdb:
 	docker exec -it postgres13 createdb --username=root --owner=root simple_bank
+
+db_docs:
+	dbdocs build doc/db.dbml
+
+db_schema:
+	dbml2sql --postgres -o doc/schema.sql doc/db.dbml
+
 
 dropdb:
 	docker exec -it postgres13 dropdb simple_bank
@@ -34,4 +40,4 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1make mock server sqlc
+.PHONY: postgres createdb dropdb db_docs, db_schema, migrateup migratedown migrateup1 migratedown1make mock server sqlc
