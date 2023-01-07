@@ -16,6 +16,9 @@ db_schema:
 dropdb:
 	docker exec -it postgres13 dropdb simple_bank
 
+evans:
+	evans --host localhost --port 9090 -r repl
+
 migratedown:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down
 

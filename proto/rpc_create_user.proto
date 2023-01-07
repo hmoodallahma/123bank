@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pb;
 import "user.proto";
-import "google/protobuf/timestamp.proto";
+
 
 
 // dir generated code will go to

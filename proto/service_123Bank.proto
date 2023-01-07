@@ -3,7 +3,7 @@ syntax = "proto3";
 package pb;
 import "rpc_create_user.proto";
 import "rpc_login_user.proto";
-import "google/protobuf/timestamp.proto";
+
 
 
 // dir generated code will go to
