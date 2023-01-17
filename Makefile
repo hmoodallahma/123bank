@@ -43,6 +43,9 @@ proto:
         --openapiv2_out=doc/swagger --openapiv2_opt=allow_merge=true,merge_file_name=123bank \
         proto/*.proto
 
+statik:
+	statik -src=./doc/swagger -dest=./doc
+
 server:
 	go run main.go
 
@@ -52,4 +55,4 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb db_docs, db_schema, migrateup migratedown migrateup1 migratedown1make mock proto server sqlc
+.PHONY: postgres createdb dropdb db_docs, db_schema, migrateup migratedown migrateup1 migratedown1make mock proto server sqlc statik
