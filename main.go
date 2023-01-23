@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hmoodallahma/123bank/api"
 	db "github.com/hmoodallahma/123bank/db/sqlc"
@@ -32,20 +36,35 @@ func main() {
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
 	}
-
+	// run db migrgtion
+	runDBMigration(config.MigrationURL, config.DBSource)
 	store := db.NewStore(conn)
 	go runGatewayServer(config, store)
 	runGrpcServer(config, store)
-
+	// runGinServer(config, store)
 }
+
+func runDBMigration(migrationUrl string, dbSource string) {
+	migration, err := migrate.New(migrationUrl, dbSource)
+	if err != nil {
+		log.Fatal("cannot create a new migration instance ", err)
+	}
+
+	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal("failed to run migrate up ", err)
+	}
+
+	fmt.Println("migration ran successfully")
+}
+
 func runGinServer(config util.Config, store db.Store) {
 	server, err := api.NewServer(config, store)
 	if err != nil {
-		log.Fatal("cannot create server")
+		log.Fatal("cannot create server ")
 	}
 	err = server.Start(config.HttpServerAddress)
 	if err != nil {
-		log.Fatal("cannot start server", err)
+		log.Fatal("cannot start server ", err)
 	}
 }
 func runGrpcServer(config util.Config, store db.Store) {
