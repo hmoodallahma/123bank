@@ -51,6 +51,43 @@ func TestGetUser(t *testing.T) {
 	require.Equal(t, user1.CreatedAt, user2.CreatedAt)
 }
 
+func TestUserUpdateOnlyFullName(t *testing.T) {
+	oldUser := createRandomUser(t)
+	newFullName := util.RandomOwner()
+
+	updatedUser, err := testQueries.UpdateUser(context.Background(),
+		UpdateUserParams{
+			FullName: sql.NullString{
+				String: newFullName,
+				Valid:  true,
+			},
+			Username: oldUser.Username,
+		})
+	require.NoError(t, err)
+	require.NotEqual(t, oldUser.FullName, updatedUser.FullName)
+	require.Equal(t, updatedUser.FullName, newFullName)
+	require.Equal(t, oldUser.HashedPassword, updatedUser.HashedPassword)
+}
+
+func TestUserUpdateOnlyEmail(t *testing.T) {
+	oldUser := createRandomUser(t)
+	newEmail := util.RandomEmail()
+
+	updatedUser, err := testQueries.UpdateUser(context.Background(),
+		UpdateUserParams{
+			Email: sql.NullString{
+				String: newEmail,
+				Valid:  true,
+			},
+			Username: oldUser.Username,
+		})
+	require.NoError(t, err)
+	require.NotEqual(t, oldUser.Email, updatedUser.Email)
+	require.Equal(t, updatedUser.FullName, oldUser.FullName)
+	require.Equal(t, updatedUser.Email, newEmail)
+	require.Equal(t, oldUser.HashedPassword, updatedUser.HashedPassword)
+}
+
 func TestUpdateUserOnlyPassword(t *testing.T) {
 	oldUser := createRandomUser(t)
 
